@@ -9,6 +9,7 @@ type AnimeCharacterRepositoryImpl interface {
 	Upsert(character *AnimeCharacter) error
 	Delete(character *AnimeCharacter) error
 	FindByID(id string) (*AnimeCharacter, error)
+	FindByName(name string) (string, error)
 }
 
 type AnimeCharacterRepository struct {
@@ -36,4 +37,13 @@ func (r *AnimeCharacterRepository) FindByID(id string) (*AnimeCharacter, error) 
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (r *AnimeCharacterRepository) FindByName(name string) (string, error) {
+	var character AnimeCharacter
+	err := r.db.DB.Select("id").Where("name = ?", name).First(&character).Error
+	if err != nil {
+		return "", err
+	}
+	return character.ID, nil
 }

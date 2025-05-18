@@ -9,6 +9,7 @@ type AnimeStaffRepositoryImpl interface {
 	Upsert(staff *AnimeStaff) error
 	Delete(staff *AnimeStaff) error
 	FindByID(id string) (*AnimeStaff, error) // Optional but helpful
+	FindByFullName(givenName string, familyName string) (string, error)
 }
 
 type AnimeStaffRepository struct {
@@ -36,4 +37,15 @@ func (r *AnimeStaffRepository) FindByID(id string) (*AnimeStaff, error) {
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (r *AnimeStaffRepository) FindByFullName(givenName string, familyName string) (string, error) {
+	var staff AnimeStaff
+	err := r.db.DB.Select("id").
+		Where("given_name = ? AND family_name = ?", givenName, familyName).
+		First(&staff).Error
+	if err != nil {
+		return "", err
+	}
+	return staff.ID, nil
 }
