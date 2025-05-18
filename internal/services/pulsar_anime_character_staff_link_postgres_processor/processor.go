@@ -56,6 +56,7 @@ func (p *PulsarAnimeCharacterStaffLinkPostgresProcessor) Process(ctx context.Con
 	}
 
 	link := &anime_character_staff_link.AnimeCharacterStaffLink{
+		ID:              data.After.ID,
 		CharacterID:     charId,
 		StaffID:         staffId,
 		CharacterName:   ptrToString(data.After.CharacterName),
