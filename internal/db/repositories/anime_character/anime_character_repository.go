@@ -2,9 +2,13 @@ package anime_character
 
 import (
 	"github.com/weeb-vip/character-staff-sync/internal/db"
+	"gorm.io/gorm/clause"
 )
 
 type AnimeCharacterRepositoryImpl interface {
+	Upsert(character *AnimeCharacter) error
+	Delete(character *AnimeCharacter) error
+	FindByID(id string) (*AnimeCharacter, error)
 }
 
 type AnimeCharacterRepository struct {
@@ -13,4 +17,23 @@ type AnimeCharacterRepository struct {
 
 func NewAnimeCharacterRepository(db *db.DB) AnimeCharacterRepositoryImpl {
 	return &AnimeCharacterRepository{db: db}
+}
+
+func (r *AnimeCharacterRepository) Upsert(character *AnimeCharacter) error {
+	return r.db.DB.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(character).Error
+}
+
+func (r *AnimeCharacterRepository) Delete(character *AnimeCharacter) error {
+	return r.db.DB.Delete(character).Error
+}
+
+func (r *AnimeCharacterRepository) FindByID(id string) (*AnimeCharacter, error) {
+	var result AnimeCharacter
+	err := r.db.DB.First(&result, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
