@@ -1,6 +1,6 @@
 module github.com/weeb-vip/character-staff-sync
 
-go 1.23
+go 1.22
 
 require (
 	github.com/apache/pulsar-client-go v0.10.0
