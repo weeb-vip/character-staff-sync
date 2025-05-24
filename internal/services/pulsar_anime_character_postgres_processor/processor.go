@@ -48,12 +48,10 @@ func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, dat
 			return err
 		}
 
-		payload := producer.ImagePayload{
-			Data: producer.ImageSchema{
-				Name: *data.After.Name + "_" + *data.After.AnimeID,
-				URL:  *data.After.Image,
-				Type: producer.DataTypeCharacter,
-			},
+		payload := producer.ImageSchema{
+			Name: *data.After.Name + "_" + *data.After.AnimeID,
+			URL:  *data.After.Image,
+			Type: producer.DataTypeCharacter,
 		}
 
 		payloadBytes, err := json.Marshal(payload)
