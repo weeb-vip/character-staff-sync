@@ -44,14 +44,17 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 			return err
 		}
 
-		jsonStaff, err := json.Marshal(ProducerPayload{
-			Action: CreateAction,
-			Data:   data.After,
-		})
 		if err != nil {
 			return err
 		}
-		if err := p.Producer.Send(ctx, jsonStaff); err != nil {
+		payload := producer.ImageSchema{
+			Name: *data.After.GivenName + "_" + *data.After.FamilyName,
+			URL:  *data.After.Image,
+			Type: producer.DataTypeStaff,
+		}
+
+		payloadBytes, err := json.Marshal(payload)
+		if err := p.Producer.Send(ctx, payloadBytes); err != nil {
 			return err
 		}
 	}
