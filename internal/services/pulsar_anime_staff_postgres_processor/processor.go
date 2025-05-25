@@ -40,6 +40,7 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 		if err != nil {
 			return err
 		}
+
 		if err := p.Repository.Upsert(newStaff); err != nil {
 			return err
 		}
@@ -85,6 +86,8 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 		if err != nil {
 			return err
 		}
+		// log newStaff
+		log.Println("INFO: newStaff", newStaff)
 		if err := p.Repository.Upsert(newStaff); err != nil {
 			return err
 		}
