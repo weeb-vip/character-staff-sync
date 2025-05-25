@@ -103,6 +103,7 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 func (p *PulsarAnimeStaffPostgresProcessor) parseToEntity(ctx context.Context, data Schema) (*anime_staff.AnimeStaff, error) {
 	return &anime_staff.AnimeStaff{
 		ID:         data.Id,
+		Language:   ptrToString(data.Language),
 		GivenName:  ptrToString(data.GivenName),
 		FamilyName: ptrToString(data.FamilyName),
 		Image:      ptrToString(data.Image),
