@@ -45,20 +45,10 @@ func (p *PulsarAnimeCharacterStaffLinkPostgresProcessor) Process(ctx context.Con
 		return nil
 	}
 
-	charId, err := p.CharRepo.FindByName(*data.After.CharacterName)
-	if err != nil {
-		return err
-	}
-
-	staffId, err := p.StaffRepo.FindByFullName(*data.After.StaffGivenName, *data.After.StaffFamilyName)
-	if err != nil {
-		return err
-	}
-
 	link := &anime_character_staff_link.AnimeCharacterStaffLink{
 		ID:              data.After.ID,
-		CharacterID:     charId,
-		StaffID:         staffId,
+		CharacterID:     data.After.CharacterID,
+		StaffID:         data.After.StaffID,
 		CharacterName:   ptrToString(data.After.CharacterName),
 		StaffGivenName:  ptrToString(data.After.StaffGivenName),
 		StaffFamilyName: ptrToString(data.After.StaffFamilyName),
@@ -66,7 +56,7 @@ func (p *PulsarAnimeCharacterStaffLinkPostgresProcessor) Process(ctx context.Con
 		UpdatedAt:       time.Now(),
 	}
 
-	err = p.LinkRepo.Upsert(link)
+	err := p.LinkRepo.Upsert(link)
 	if err != nil {
 		return err
 	}

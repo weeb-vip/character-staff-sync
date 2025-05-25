@@ -10,6 +10,8 @@ const (
 
 type Schema struct {
 	ID              string  `json:"id"`
+	CharacterID     string  `json:"character_id"`
+	StaffID         string  `json:"staff_id"`
 	CharacterName   *string `json:"character_name"`
 	StaffGivenName  *string `json:"staff_given_name"`
 	StaffFamilyName *string `json:"staff_family_name"`
