@@ -6,6 +6,7 @@ import (
 
 type AnimeStaff struct {
 	ID         string    `gorm:"type:char(36);primaryKey"`
+	Language   string    `gorm:"type:varchar(30);not null"`
 	GivenName  string    `gorm:"type:varchar(255);not null"`
 	FamilyName string    `gorm:"type:varchar(255);not null"`
 	Image      string    `gorm:"type:text"`
