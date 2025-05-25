@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/cenkalti/backoff/v4"
+	"log"
 )
 
 type ProcessorFunc[T any] func(ctx context.Context, data T) error
@@ -32,6 +33,7 @@ func (p *Processor[T]) Parse(ctx context.Context, payload string) (*T, error) {
 }
 
 func (p *Processor[T]) Process(ctx context.Context, payload string, fn ProcessorFunc[T]) error {
+	log.Println("Processing payload:", payload)
 	data, err := p.Parse(ctx, payload)
 	if err != nil {
 		return err
