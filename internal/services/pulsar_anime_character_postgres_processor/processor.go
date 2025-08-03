@@ -3,7 +3,11 @@ package pulsar_anime_character_postgres_processor
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"github.com/Flagsmith/flagsmith-go-client/v2"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/weeb-vip/character-staff-sync/internal"
+	"github.com/weeb-vip/character-staff-sync/internal/logger"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/weeb-vip/character-staff-sync/internal/db"
@@ -21,20 +25,34 @@ type PulsarAnimeCharacterPostgresProcessorImpl interface {
 }
 
 type PulsarAnimeCharacterPostgresProcessor struct {
-	Repository anime_character.AnimeCharacterRepositoryImpl
-	Options    Options
-	Producer   producer.Producer[Schema]
+	Repository    anime_character.AnimeCharacterRepositoryImpl
+	Options       Options
+	Producer      producer.Producer[Schema]
+	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewPulsarAnimeCharacterPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema]) PulsarAnimeCharacterPostgresProcessorImpl {
+func NewPulsarAnimeCharacterPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimeCharacterPostgresProcessorImpl {
 	return &PulsarAnimeCharacterPostgresProcessor{
-		Repository: anime_character.NewAnimeCharacterRepository(db),
-		Options:    opt,
-		Producer:   prod,
+		Repository:    anime_character.NewAnimeCharacterRepository(db),
+		Options:       opt,
+		Producer:      prod,
+		KafkaProducer: kafkaProducer,
 	}
 }
 
 func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, data Payload) error {
+	log := logger.FromCtx(ctx)
+
+	log.Info("Gettting flagsmith client from context")
+	flagsmithClient, _ := ctx.Value(internal.FFClient{}).(*flagsmith.Client)
+
+	log.Info("Getting environment flags from flagsmith client")
+	flags, _ := flagsmithClient.GetEnvironmentFlags()
+
+	log.Info("Checking if feature 'enable_kafka' is enabled")
+	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
+	log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
+
 	if data.Before == nil && data.After != nil {
 		newChar, err := p.parseToEntity(ctx, *data.After)
 		if err != nil {
@@ -56,10 +74,20 @@ func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, dat
 			URL:  image,
 			Type: producer.DataTypeCharacter,
 		}
-
+		
+		payloadBytes, _ := json.Marshal(payload)
 		if data.After.Image != nil {
-			payloadBytes, _ := json.Marshal(payload)
-			if err := p.Producer.Send(ctx, payloadBytes); err != nil {
+			log.Info("Sending update to producer", zap.String("title", payload.Name), zap.String("imageURL", payload.URL))
+
+			if isEnabled {
+				err = p.KafkaProducer(ctx, &kafka.Message{
+					Value: payloadBytes,
+				})
+			} else {
+				err = p.Producer.Send(ctx, payloadBytes)
+			}
+			if err != nil {
+				log.Error("Error sending message to producer", zap.Error(err))
 				return err
 			}
 		}
@@ -72,7 +100,7 @@ func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, dat
 		}
 		if err := p.Repository.Delete(oldChar); err != nil {
 			if p.Options.NoErrorOnDelete {
-				log.Println("WARN: error deleting from db:", err)
+				log.Warn("WARN: error deleting from db:", zap.Error(err))
 				return nil
 			}
 			return err
@@ -91,7 +119,7 @@ func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, dat
 	}
 
 	if data.Before != nil && data.After == nil {
-		log.Println("WARN: data.After is nil, skipping update")
+		log.Warn("WARN: data.After is nil, skipping update")
 	}
 
 	return nil

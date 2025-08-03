@@ -3,12 +3,15 @@ package pulsar_anime_staff_postgres_processor
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"time"
-
+	"github.com/Flagsmith/flagsmith-go-client/v2"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/weeb-vip/character-staff-sync/internal"
 	"github.com/weeb-vip/character-staff-sync/internal/db"
 	"github.com/weeb-vip/character-staff-sync/internal/db/repositories/anime_staff"
+	"github.com/weeb-vip/character-staff-sync/internal/logger"
 	"github.com/weeb-vip/character-staff-sync/internal/producer"
+	"go.uber.org/zap"
+	"time"
 )
 
 type Options struct {
@@ -21,26 +24,42 @@ type PulsarAnimeStaffPostgresProcessorImpl interface {
 }
 
 type PulsarAnimeStaffPostgresProcessor struct {
-	Repository anime_staff.AnimeStaffRepositoryImpl
-	Options    Options
-	Producer   producer.Producer[Schema]
+	Repository    anime_staff.AnimeStaffRepositoryImpl
+	Options       Options
+	Producer      producer.Producer[Schema]
+	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewPulsarAnimeStaffPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema]) PulsarAnimeStaffPostgresProcessorImpl {
+func NewPulsarAnimeStaffPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimeStaffPostgresProcessorImpl {
 	return &PulsarAnimeStaffPostgresProcessor{
-		Repository: anime_staff.NewAnimeStaffRepository(db),
-		Options:    opt,
-		Producer:   prod,
+		Repository:    anime_staff.NewAnimeStaffRepository(db),
+		Options:       opt,
+		Producer:      prod,
+		KafkaProducer: kafkaProducer,
 	}
 }
 
 func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Payload) error {
+	log := logger.FromCtx(ctx)
+
+	log.Info("Gettting flagsmith client from context")
+	flagsmithClient, _ := ctx.Value(internal.FFClient{}).(*flagsmith.Client)
+
+	log.Info("Getting environment flags from flagsmith client")
+	flags, _ := flagsmithClient.GetEnvironmentFlags()
+
+	log.Info("Checking if feature 'enable_kafka' is enabled")
+	isEnabled, _ := flags.IsFeatureEnabled("enable_kafka")
+	log.Info("Feature 'enable_kafka' is enabled", zap.Bool("isEnabled", isEnabled))
+
 	if data.Before == nil && data.After != nil {
 		newStaff, err := p.parseToEntity(ctx, *data.After)
 		if err != nil {
 			return err
 		}
-		log.Println("INFO: newStaff", newStaff)
+		log.Info("INFO: newStaff", zap.String("ID", newStaff.ID),
+			zap.String("GivenName", newStaff.GivenName),
+			zap.String("FamilyName", newStaff.FamilyName))
 		if err := p.Repository.Upsert(newStaff); err != nil {
 			return err
 		}
@@ -60,7 +79,17 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 
 		payloadBytes, err := json.Marshal(payload)
 		if data.After.Image != nil {
-			if err := p.Producer.Send(ctx, payloadBytes); err != nil {
+			log.Info("Sending update to producer", zap.String("title", payload.Name), zap.String("imageURL", payload.URL))
+
+			if isEnabled {
+				err = p.KafkaProducer(ctx, &kafka.Message{
+					Value: payloadBytes,
+				})
+			} else {
+				err = p.Producer.Send(ctx, payloadBytes)
+			}
+			if err != nil {
+				log.Error("Error sending message to producer", zap.Error(err))
 				return err
 			}
 		}
@@ -73,7 +102,7 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 		}
 		if err := p.Repository.Delete(oldStaff); err != nil {
 			if p.Options.NoErrorOnDelete {
-				log.Println("WARN: error deleting from db:", err)
+				log.Warn("WARN: error deleting from db:", zap.Error(err))
 				return nil
 			}
 			return err
@@ -87,14 +116,16 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 			return err
 		}
 		// log newStaff
-		log.Println("INFO: newStaff", newStaff)
+		log.Info("INFO: newStaff", zap.String("ID", newStaff.ID),
+			zap.String("GivenName", newStaff.GivenName),
+			zap.String("FamilyName", newStaff.FamilyName))
 		if err := p.Repository.Upsert(newStaff); err != nil {
 			return err
 		}
 	}
 
 	if data.Before != nil && data.After == nil {
-		log.Println("WARN: data.After is nil, skipping update")
+		log.Warn("WARN: data.After is nil, skipping update")
 	}
 
 	return nil
