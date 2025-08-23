@@ -56,7 +56,7 @@ func EventingAnimeStaff() error {
 
 	animeProducer := producer.NewProducer[pulsar_anime_staff_postgres_processor.ProducerPayload](ctx, cfg.PulsarConfig)
 
-	postgresProcessor := pulsar_anime_staff_postgres_processor.NewPulsarAnimeStaffPostgresProcessor(posgresProcessorOptions, database, animeProducer, KafkaProducer(ctx, driver, cfg.KafkaConfig.Topic))
+	postgresProcessor := pulsar_anime_staff_postgres_processor.NewPulsarAnimeStaffPostgresProcessor(posgresProcessorOptions, database, animeProducer, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	messageProcessor := processor.NewProcessor[pulsar_anime_staff_postgres_processor.Payload]()
 
