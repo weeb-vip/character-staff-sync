@@ -19,20 +19,20 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type PulsarAnimeCharacterPostgresProcessorImpl interface {
+type PulsarAnimeCharacterPostgresProcessor interface {
 	Process(ctx context.Context, data Payload) error
 	parseToEntity(ctx context.Context, data Schema) (*anime_character.AnimeCharacter, error)
 }
 
-type PulsarAnimeCharacterPostgresProcessor struct {
-	Repository    anime_character.AnimeCharacterRepositoryImpl
+type PulsarAnimeCharacterPostgresProcessorImpl struct {
+	Repository    anime_character.AnimeCharacterRepository
 	Options       Options
 	Producer      producer.Producer[Schema]
 	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewPulsarAnimeCharacterPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimeCharacterPostgresProcessorImpl {
-	return &PulsarAnimeCharacterPostgresProcessor{
+func NewPulsarAnimeCharacterPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimeCharacterPostgresProcessor {
+	return &PulsarAnimeCharacterPostgresProcessorImpl{
 		Repository:    anime_character.NewAnimeCharacterRepository(db),
 		Options:       opt,
 		Producer:      prod,
@@ -40,7 +40,7 @@ func NewPulsarAnimeCharacterPostgresProcessor(opt Options, db *db.DB, prod produ
 	}
 }
 
-func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, data Payload) error {
+func (p *PulsarAnimeCharacterPostgresProcessorImpl) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
 
 	log.Info("Gettting flagsmith client from context")
@@ -125,7 +125,7 @@ func (p *PulsarAnimeCharacterPostgresProcessor) Process(ctx context.Context, dat
 	return nil
 }
 
-func (p *PulsarAnimeCharacterPostgresProcessor) parseToEntity(ctx context.Context, data Schema) (*anime_character.AnimeCharacter, error) {
+func (p *PulsarAnimeCharacterPostgresProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_character.AnimeCharacter, error) {
 	return &anime_character.AnimeCharacter{
 		ID:            data.Id,
 		AnimeID:       ptrToString(data.AnimeID),

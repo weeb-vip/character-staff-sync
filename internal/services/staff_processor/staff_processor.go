@@ -21,12 +21,12 @@ type StaffProcessor interface {
 }
 
 type StaffProcessorImpl struct {
-	Repository anime_staff.AnimeStaffRepositoryImpl
+	Repository anime_staff.AnimeStaffRepository
 	Options    Options
 	Producer   func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewStaffProcessor(opt Options, repo anime_staff.AnimeStaffRepositoryImpl, producer func(ctx context.Context, message *kafka.Message) error) StaffProcessor {
+func NewStaffProcessor(opt Options, repo anime_staff.AnimeStaffRepository, producer func(ctx context.Context, message *kafka.Message) error) StaffProcessor {
 	return &StaffProcessorImpl{
 		Repository: repo,
 		Options:    opt,

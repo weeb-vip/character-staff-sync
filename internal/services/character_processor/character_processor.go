@@ -15,26 +15,25 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type CharacterProcessorImpl interface {
+type CharacterProcessor interface {
 	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
-	parseToEntity(ctx context.Context, data Schema) (*anime_character.AnimeCharacter, error)
 }
 
-type CharacterProcessor struct {
-	Repository    anime_character.AnimeCharacterRepositoryImpl
+type CharacterProcessorImpl struct {
+	Repository    anime_character.AnimeCharacterRepository
 	Options       Options
 	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewCharacterProcessor(opt Options, repo anime_character.AnimeCharacterRepositoryImpl, kafkaProducer func(ctx context.Context, message *kafka.Message) error) CharacterProcessorImpl {
-	return &CharacterProcessor{
+func NewCharacterProcessor(opt Options, repo anime_character.AnimeCharacterRepository, kafkaProducer func(ctx context.Context, message *kafka.Message) error) CharacterProcessor {
+	return &CharacterProcessorImpl{
 		Repository:    repo,
 		Options:       opt,
 		KafkaProducer: kafkaProducer,
 	}
 }
 
-func (p *CharacterProcessor) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *CharacterProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -144,7 +143,7 @@ func (p *CharacterProcessor) Process(ctx context.Context, data event.Event[*kafk
 	return data, nil
 }
 
-func (p *CharacterProcessor) parseToEntity(ctx context.Context, data Schema) (*anime_character.AnimeCharacter, error) {
+func (p *CharacterProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_character.AnimeCharacter, error) {
 	return &anime_character.AnimeCharacter{
 		ID:            data.Id,
 		AnimeID:       ptrToString(data.AnimeID),

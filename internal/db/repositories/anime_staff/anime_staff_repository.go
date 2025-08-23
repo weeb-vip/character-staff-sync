@@ -5,32 +5,32 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type AnimeStaffRepositoryImpl interface {
+type AnimeStaffRepository interface {
 	Upsert(staff *AnimeStaff) error
 	Delete(staff *AnimeStaff) error
 	FindByID(id string) (*AnimeStaff, error) // Optional but helpful
 	FindByFullName(givenName string, familyName string) (string, error)
 }
 
-type AnimeStaffRepository struct {
+type AnimeStaffRepositoryImpl struct {
 	db *db.DB
 }
 
-func NewAnimeStaffRepository(db *db.DB) AnimeStaffRepositoryImpl {
-	return &AnimeStaffRepository{db: db}
+func NewAnimeStaffRepository(db *db.DB) AnimeStaffRepository {
+	return &AnimeStaffRepositoryImpl{db: db}
 }
 
-func (r *AnimeStaffRepository) Upsert(staff *AnimeStaff) error {
+func (r *AnimeStaffRepositoryImpl) Upsert(staff *AnimeStaff) error {
 	return r.db.DB.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(staff).Error
 }
 
-func (r *AnimeStaffRepository) Delete(staff *AnimeStaff) error {
+func (r *AnimeStaffRepositoryImpl) Delete(staff *AnimeStaff) error {
 	return r.db.DB.Delete(staff).Error
 }
 
-func (r *AnimeStaffRepository) FindByID(id string) (*AnimeStaff, error) {
+func (r *AnimeStaffRepositoryImpl) FindByID(id string) (*AnimeStaff, error) {
 	var result AnimeStaff
 	err := r.db.DB.First(&result, "id = ?", id).Error
 	if err != nil {
@@ -39,7 +39,7 @@ func (r *AnimeStaffRepository) FindByID(id string) (*AnimeStaff, error) {
 	return &result, nil
 }
 
-func (r *AnimeStaffRepository) FindByFullName(givenName string, familyName string) (string, error) {
+func (r *AnimeStaffRepositoryImpl) FindByFullName(givenName string, familyName string) (string, error) {
 	var staff AnimeStaff
 	err := r.db.DB.Select("id").
 		Where("given_name = ? AND family_name = ?", givenName, familyName).

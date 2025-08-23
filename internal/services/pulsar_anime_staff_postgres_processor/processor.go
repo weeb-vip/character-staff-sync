@@ -18,20 +18,20 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type PulsarAnimeStaffPostgresProcessorImpl interface {
+type PulsarAnimeStaffPostgresProcessor interface {
 	Process(ctx context.Context, data Payload) error
 	parseToEntity(ctx context.Context, data Schema) (*anime_staff.AnimeStaff, error)
 }
 
-type PulsarAnimeStaffPostgresProcessor struct {
-	Repository    anime_staff.AnimeStaffRepositoryImpl
+type PulsarAnimeStaffPostgresProcessorImpl struct {
+	Repository    anime_staff.AnimeStaffRepository
 	Options       Options
 	Producer      producer.Producer[Schema]
 	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewPulsarAnimeStaffPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimeStaffPostgresProcessorImpl {
-	return &PulsarAnimeStaffPostgresProcessor{
+func NewPulsarAnimeStaffPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema], kafkaProducer func(ctx context.Context, message *kafka.Message) error) PulsarAnimeStaffPostgresProcessor {
+	return &PulsarAnimeStaffPostgresProcessorImpl{
 		Repository:    anime_staff.NewAnimeStaffRepository(db),
 		Options:       opt,
 		Producer:      prod,
@@ -39,7 +39,7 @@ func NewPulsarAnimeStaffPostgresProcessor(opt Options, db *db.DB, prod producer.
 	}
 }
 
-func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Payload) error {
+func (p *PulsarAnimeStaffPostgresProcessorImpl) Process(ctx context.Context, data Payload) error {
 	log := logger.FromCtx(ctx)
 
 	log.Info("Gettting flagsmith client from context")
@@ -131,7 +131,7 @@ func (p *PulsarAnimeStaffPostgresProcessor) Process(ctx context.Context, data Pa
 	return nil
 }
 
-func (p *PulsarAnimeStaffPostgresProcessor) parseToEntity(ctx context.Context, data Schema) (*anime_staff.AnimeStaff, error) {
+func (p *PulsarAnimeStaffPostgresProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_staff.AnimeStaff, error) {
 	return &anime_staff.AnimeStaff{
 		ID:         data.Id,
 		Language:   ptrToString(data.Language),

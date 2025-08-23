@@ -5,20 +5,20 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type AnimeCharacterStaffLinkRepositoryImpl interface {
+type AnimeCharacterStaffLinkRepository interface {
 	Upsert(link *AnimeCharacterStaffLink) error
 	Delete(link *AnimeCharacterStaffLink) error
 }
 
-type AnimeCharacterStaffLinkRepository struct {
+type AnimeCharacterStaffLinkRepositoryImpl struct {
 	db *db.DB
 }
 
-func NewAnimeCharacterStaffLinkRepository(db *db.DB) AnimeCharacterStaffLinkRepositoryImpl {
-	return &AnimeCharacterStaffLinkRepository{db: db}
+func NewAnimeCharacterStaffLinkRepository(db *db.DB) AnimeCharacterStaffLinkRepository {
+	return &AnimeCharacterStaffLinkRepositoryImpl{db: db}
 }
 
-func (r *AnimeCharacterStaffLinkRepository) Upsert(link *AnimeCharacterStaffLink) error {
+func (r *AnimeCharacterStaffLinkRepositoryImpl) Upsert(link *AnimeCharacterStaffLink) error {
 	return r.db.DB.
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
@@ -27,6 +27,6 @@ func (r *AnimeCharacterStaffLinkRepository) Upsert(link *AnimeCharacterStaffLink
 		Error
 }
 
-func (r *AnimeCharacterStaffLinkRepository) Delete(link *AnimeCharacterStaffLink) error {
+func (r *AnimeCharacterStaffLinkRepositoryImpl) Delete(link *AnimeCharacterStaffLink) error {
 	return r.db.DB.Delete(link).Error
 }

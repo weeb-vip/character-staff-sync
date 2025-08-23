@@ -15,26 +15,25 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type CharacterStaffLinkProcessorImpl interface {
+type CharacterStaffLinkProcessor interface {
 	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
-	parseToEntity(ctx context.Context, data Schema) (*anime_character_staff_link.AnimeCharacterStaffLink, error)
 }
 
-type CharacterStaffLinkProcessor struct {
-	Repository    anime_character_staff_link.AnimeCharacterStaffLinkRepositoryImpl
+type CharacterStaffLinkProcessorImpl struct {
+	Repository    anime_character_staff_link.AnimeCharacterStaffLinkRepository
 	Options       Options
 	KafkaProducer func(ctx context.Context, message *kafka.Message) error
 }
 
-func NewCharacterStaffLinkProcessor(opt Options, repo anime_character_staff_link.AnimeCharacterStaffLinkRepositoryImpl, kafkaProducer func(ctx context.Context, message *kafka.Message) error) CharacterStaffLinkProcessorImpl {
-	return &CharacterStaffLinkProcessor{
+func NewCharacterStaffLinkProcessor(opt Options, repo anime_character_staff_link.AnimeCharacterStaffLinkRepository, kafkaProducer func(ctx context.Context, message *kafka.Message) error) CharacterStaffLinkProcessor {
+	return &CharacterStaffLinkProcessorImpl{
 		Repository:    repo,
 		Options:       opt,
 		KafkaProducer: kafkaProducer,
 	}
 }
 
-func (p *CharacterStaffLinkProcessor) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *CharacterStaffLinkProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -144,7 +143,7 @@ func (p *CharacterStaffLinkProcessor) Process(ctx context.Context, data event.Ev
 	return data, nil
 }
 
-func (p *CharacterStaffLinkProcessor) parseToEntity(ctx context.Context, data Schema) (*anime_character_staff_link.AnimeCharacterStaffLink, error) {
+func (p *CharacterStaffLinkProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_character_staff_link.AnimeCharacterStaffLink, error) {
 	return &anime_character_staff_link.AnimeCharacterStaffLink{
 		ID:              data.ID,
 		CharacterID:     data.CharacterID,

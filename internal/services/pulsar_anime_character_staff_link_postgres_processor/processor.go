@@ -17,20 +17,20 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type PulsarAnimeCharacterStaffLinkPostgresProcessorImpl interface {
+type PulsarAnimeCharacterStaffLinkPostgresProcessor interface {
 	Process(ctx context.Context, data Payload) error
 }
 
-type PulsarAnimeCharacterStaffLinkPostgresProcessor struct {
-	LinkRepo  anime_character_staff_link.AnimeCharacterStaffLinkRepositoryImpl
-	CharRepo  anime_character.AnimeCharacterRepositoryImpl
-	StaffRepo anime_staff.AnimeStaffRepositoryImpl
+type PulsarAnimeCharacterStaffLinkPostgresProcessorImpl struct {
+	LinkRepo  anime_character_staff_link.AnimeCharacterStaffLinkRepository
+	CharRepo  anime_character.AnimeCharacterRepository
+	StaffRepo anime_staff.AnimeStaffRepository
 	Options   Options
 	Producer  producer.Producer[Schema]
 }
 
-func NewPulsarAnimeCharacterStaffLinkPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema]) PulsarAnimeCharacterStaffLinkPostgresProcessorImpl {
-	return &PulsarAnimeCharacterStaffLinkPostgresProcessor{
+func NewPulsarAnimeCharacterStaffLinkPostgresProcessor(opt Options, db *db.DB, prod producer.Producer[Schema]) PulsarAnimeCharacterStaffLinkPostgresProcessor {
+	return &PulsarAnimeCharacterStaffLinkPostgresProcessorImpl{
 		LinkRepo:  anime_character_staff_link.NewAnimeCharacterStaffLinkRepository(db),
 		CharRepo:  anime_character.NewAnimeCharacterRepository(db),
 		StaffRepo: anime_staff.NewAnimeStaffRepository(db),
@@ -39,7 +39,7 @@ func NewPulsarAnimeCharacterStaffLinkPostgresProcessor(opt Options, db *db.DB, p
 	}
 }
 
-func (p *PulsarAnimeCharacterStaffLinkPostgresProcessor) Process(ctx context.Context, data Payload) error {
+func (p *PulsarAnimeCharacterStaffLinkPostgresProcessorImpl) Process(ctx context.Context, data Payload) error {
 	if data.After == nil {
 		log.Println("WARN: data.After is nil, skipping link processing")
 		return nil
