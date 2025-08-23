@@ -9,7 +9,7 @@ import (
 
 // serveAnimeCharacterStaffLinkKafkaCmd represents the serve-anime-character-staff-link-kafka command
 var serveAnimeCharacterStaffLinkKafkaCmd = &cobra.Command{
-	Use:   "serve-anime-character-staff-link-kafka",
+	Use:   "serve-character-staff-link-kafka",
 	Short: "Start Kafka eventing pipeline for anime character staff links",
 	Long: `Launches the Kafka event-driven pipeline responsible for syncing 
 anime character staff link data from Kafka into the database.`,
