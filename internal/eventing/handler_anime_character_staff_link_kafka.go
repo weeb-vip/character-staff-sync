@@ -65,6 +65,8 @@ func EventingAnimeCharacterStaffLinkKafka() error {
 
 	log.Info("Starting Kafka processor", zap.String("topic", cfg.KafkaConfig.Topic))
 	err := processorInstance.
+		AddMiddleware(NewLoggerMiddleware[*kafka.Message, character_staff_link_processor.Payload]().Process).
+		AddMiddleware(NewTransformMiddleware[*kafka.Message, character_staff_link_processor.Payload]().Process).
 		AddMiddleware(backoffRetryInstance.Process).
 		Run(ctx)
 
