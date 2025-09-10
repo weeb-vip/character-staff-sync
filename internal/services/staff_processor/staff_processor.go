@@ -64,7 +64,7 @@ func (p *StaffProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 			Type: producer.DataTypeStaff,
 		}
 
-		payloadBytes, err := json.Marshal(payload)
+		payloadBytes, err := json.Marshal(imagePayload)
 		if payload.After.Image != nil {
 			log.Info("Sending update to producer", zap.String("title", imagePayload.Name), zap.String("imageURL", imagePayload.URL))
 

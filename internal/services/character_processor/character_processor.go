@@ -7,6 +7,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/character-staff-sync/internal/db/repositories/anime_character"
 	"github.com/weeb-vip/character-staff-sync/internal/logger"
+	"github.com/weeb-vip/character-staff-sync/internal/producer"
 	"go.uber.org/zap"
 	"time"
 )
@@ -47,12 +48,18 @@ func (p *CharacterProcessorImpl) Process(ctx context.Context, data event.Event[*
 			return data, err
 		}
 
-		producerPayload := ProducerPayload{
-			Action: CreateAction,
-			Data:   payload.After,
+		image := ""
+		if payload.After.Image != nil {
+			image = *payload.After.Image
 		}
 
-		payloadBytes, err := json.Marshal(producerPayload)
+		imagePayload := producer.ImageSchema{
+			Name: *payload.After.Name,
+			URL:  image,
+			Type: producer.DataTypeStaff,
+		}
+
+		payloadBytes, err := json.Marshal(imagePayload)
 		if err != nil {
 			log.Error("Error marshaling producer payload", zap.Error(err))
 			return data, err
