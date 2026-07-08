@@ -77,15 +77,17 @@ func (p *PulsarAnimeStaffPostgresProcessorImpl) Process(ctx context.Context, dat
 			Type: producer.DataTypeStaff,
 		}
 
-		payloadBytes, err := json.Marshal(payload)
 		if data.After.Image != nil {
 			log.Info("Sending update to producer", zap.String("title", payload.Name), zap.String("imageURL", payload.URL))
 
 			if isEnabled {
+				// the kafka consumer expects the payload wrapped in a data envelope
+				payloadBytes, _ := json.Marshal(producer.ImagePayload{Data: payload})
 				err = p.KafkaProducer(ctx, &kafka.Message{
 					Value: payloadBytes,
 				})
 			} else {
+				payloadBytes, _ := json.Marshal(payload)
 				err = p.Producer.Send(ctx, payloadBytes)
 			}
 			if err != nil {

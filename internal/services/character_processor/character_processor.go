@@ -48,30 +48,29 @@ func (p *CharacterProcessorImpl) Process(ctx context.Context, data event.Event[*
 			return data, err
 		}
 
-		image := ""
 		if payload.After.Image != nil {
-			image = *payload.After.Image
-		}
+			imagePayload := producer.ImagePayload{
+				Data: producer.ImageSchema{
+					Name: *payload.After.Name,
+					URL:  *payload.After.Image,
+					Type: producer.DataTypeCharacter,
+				},
+			}
 
-		imagePayload := producer.ImageSchema{
-			Name: *payload.After.Name,
-			URL:  image,
-			Type: producer.DataTypeStaff,
-		}
-
-		payloadBytes, err := json.Marshal(imagePayload)
-		if err != nil {
-			log.Error("Error marshaling producer payload", zap.Error(err))
-			return data, err
-		}
-
-		if p.KafkaProducer != nil {
-			err = p.KafkaProducer(ctx, &kafka.Message{
-				Value: payloadBytes,
-			})
+			payloadBytes, err := json.Marshal(imagePayload)
 			if err != nil {
-				log.Error("Error sending message to Kafka producer", zap.Error(err))
+				log.Error("Error marshaling producer payload", zap.Error(err))
 				return data, err
+			}
+
+			if p.KafkaProducer != nil {
+				err = p.KafkaProducer(ctx, &kafka.Message{
+					Value: payloadBytes,
+				})
+				if err != nil {
+					log.Error("Error sending message to Kafka producer", zap.Error(err))
+					return data, err
+				}
 			}
 		}
 	}

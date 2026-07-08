@@ -58,15 +58,17 @@ func (p *StaffProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		if payload.After.Image != nil {
 			image = *payload.After.Image
 		}
-		imagePayload := producer.ImageSchema{
-			Name: *payload.After.GivenName + "_" + *payload.After.FamilyName,
-			URL:  image,
-			Type: producer.DataTypeStaff,
+		imagePayload := producer.ImagePayload{
+			Data: producer.ImageSchema{
+				Name: *payload.After.GivenName + "_" + *payload.After.FamilyName,
+				URL:  image,
+				Type: producer.DataTypeStaff,
+			},
 		}
 
 		payloadBytes, err := json.Marshal(imagePayload)
 		if payload.After.Image != nil {
-			log.Info("Sending update to producer", zap.String("title", imagePayload.Name), zap.String("imageURL", imagePayload.URL))
+			log.Info("Sending update to producer", zap.String("title", imagePayload.Data.Name), zap.String("imageURL", imagePayload.Data.URL))
 
 			err = p.Producer(ctx, &kafka.Message{
 				Value: payloadBytes,
