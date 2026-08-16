@@ -70,6 +70,7 @@ func (p *PulsarAnimeCharacterPostgresProcessorImpl) Process(ctx context.Context,
 			image = *data.After.Image
 		}
 		payload := producer.ImageSchema{
+			ID:   newChar.ID,
 			Name: *data.After.Name + "_" + *data.After.AnimeID,
 			URL:  image,
 			Type: producer.DataTypeCharacter,

@@ -60,6 +60,7 @@ func (p *StaffProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		}
 		imagePayload := producer.ImagePayload{
 			Data: producer.ImageSchema{
+				ID:   newStaff.ID,
 				Name: *payload.After.GivenName + "_" + *payload.After.FamilyName,
 				URL:  image,
 				Type: producer.DataTypeStaff,
