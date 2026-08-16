@@ -51,6 +51,7 @@ func (p *CharacterProcessorImpl) Process(ctx context.Context, data event.Event[*
 		if payload.After.Image != nil {
 			imagePayload := producer.ImagePayload{
 				Data: producer.ImageSchema{
+					ID:   newChar.ID,
 					Name: *payload.After.Name,
 					URL:  *payload.After.Image,
 					Type: producer.DataTypeCharacter,
