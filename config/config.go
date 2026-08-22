@@ -37,6 +37,15 @@ type PulsarConfig struct {
 type KafkaConfig struct {
 	ConsumerGroupName string `default:"image-sync-group" env:"KAFKA_CONSUMER_GROUP_NAME"`
 	BootstrapServers  string `default:"localhost:9092" env:"KAFKA_BOOTSTRAP_SERVERS"`
+	// Where a consumer starts when it has no valid committed offset -- including
+	// when retention has deleted past the one it had.
+	//
+	// earliest, not the rdkafka default of latest. This field did not exist and
+	// the handlers passed nil, so a consumer whose offset fell behind the low
+	// watermark jumped to the end of the topic and silently skipped everything in
+	// between. It kept reporting lag and consuming nothing, which reads as a stall
+	// rather than a reset. anime-sync has always set this; this service did not.
+	Offset            string `default:"earliest" env:"KAFKA_OFFSET"`
 	Topic             string `default:"anime-db.public.anime_staff" env:"KAFKA_TOPIC"`
 	ProducerTopic     string `default:"image-sync" env:"KAFKA_PRODUCER_TOPIC"`
 }
