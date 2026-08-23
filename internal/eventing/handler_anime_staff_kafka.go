@@ -56,7 +56,7 @@ func EventingAnimeStaffKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	staffProcessor := staff_processor.NewStaffProcessor(posgresProcessorOptions, animeStaffRepo, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
+	staffProcessor := staff_processor.NewStaffProcessor[*kafka.Message](posgresProcessorOptions, animeStaffRepo, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, staff_processor.Payload](driver, cfg.KafkaConfig.Topic, staffProcessor.Process)
 
