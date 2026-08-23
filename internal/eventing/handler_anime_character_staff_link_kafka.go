@@ -52,7 +52,7 @@ func EventingAnimeCharacterStaffLinkKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	linkProcessor := character_staff_link_processor.NewCharacterStaffLinkProcessor(processorOptions, characterStaffLinkRepo, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
+	linkProcessor := character_staff_link_processor.NewCharacterStaffLinkProcessor[*kafka.Message](processorOptions, characterStaffLinkRepo, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, character_staff_link_processor.Payload](driver, cfg.KafkaConfig.Topic, linkProcessor.Process)
 

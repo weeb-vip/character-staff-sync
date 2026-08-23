@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ThatCatDev/ep/v2/event"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/character-staff-sync/internal/db/repositories/anime_staff"
 	"github.com/weeb-vip/character-staff-sync/internal/logger"
 	"github.com/weeb-vip/character-staff-sync/internal/producer"
@@ -16,25 +15,34 @@ type Options struct {
 	NoErrorOnDelete bool
 }
 
-type StaffProcessor interface {
-	Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error)
+// The driver message type is a parameter because the processor never looks at
+// it. Nothing here reads DriverMessage, RawData or Headers -- only Payload,
+// which the transform middleware has already filled in. Hard-coding
+// *kafka.Message meant this could not be reused over NATS despite none of the
+// logic being Kafka-specific.
+//
+// Producers take the encoded value rather than a driver message for the same
+// reason: every call site only ever set Value, so building the transport's
+// message belongs in the handler that knows which transport it is.
+type StaffProcessor[DM any] interface {
+	Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error)
 }
 
-type StaffProcessorImpl struct {
+type StaffProcessorImpl[DM any] struct {
 	Repository anime_staff.AnimeStaffRepository
 	Options    Options
-	Producer   func(ctx context.Context, message *kafka.Message) error
+	Producer   func(ctx context.Context, value []byte) error
 }
 
-func NewStaffProcessor(opt Options, repo anime_staff.AnimeStaffRepository, producer func(ctx context.Context, message *kafka.Message) error) StaffProcessor {
-	return &StaffProcessorImpl{
+func NewStaffProcessor[DM any](opt Options, repo anime_staff.AnimeStaffRepository, producer func(ctx context.Context, value []byte) error) StaffProcessor[DM] {
+	return &StaffProcessorImpl[DM]{
 		Repository: repo,
 		Options:    opt,
 		Producer:   producer,
 	}
 }
 
-func (p *StaffProcessorImpl) Process(ctx context.Context, data event.Event[*kafka.Message, Payload]) (event.Event[*kafka.Message, Payload], error) {
+func (p *StaffProcessorImpl[DM]) Process(ctx context.Context, data event.Event[DM, Payload]) (event.Event[DM, Payload], error) {
 	log := logger.FromCtx(ctx)
 
 	payload := data.Payload
@@ -71,9 +79,7 @@ func (p *StaffProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 		if payload.After.Image != nil {
 			log.Info("Sending update to producer", zap.String("title", imagePayload.Data.Name), zap.String("imageURL", imagePayload.Data.URL))
 
-			err = p.Producer(ctx, &kafka.Message{
-				Value: payloadBytes,
-			})
+			err = p.Producer(ctx, payloadBytes)
 
 			if err != nil {
 				log.Error("Error sending message to producer", zap.Error(err))
@@ -118,7 +124,7 @@ func (p *StaffProcessorImpl) Process(ctx context.Context, data event.Event[*kafk
 	return data, nil
 }
 
-func (p *StaffProcessorImpl) parseToEntity(ctx context.Context, data Schema) (*anime_staff.AnimeStaff, error) {
+func (p *StaffProcessorImpl[DM]) parseToEntity(ctx context.Context, data Schema) (*anime_staff.AnimeStaff, error) {
 	return &anime_staff.AnimeStaff{
 		ID:         data.Id,
 		Language:   ptrToString(data.Language),

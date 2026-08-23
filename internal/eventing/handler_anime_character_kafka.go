@@ -52,7 +52,7 @@ func EventingAnimeCharacterKafka() error {
 		NoErrorOnDelete: true,
 	}
 
-	characterProcessor := character_processor.NewCharacterProcessor(processorOptions, animeCharacterRepo, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
+	characterProcessor := character_processor.NewCharacterProcessor[*kafka.Message](processorOptions, animeCharacterRepo, KafkaProducer(ctx, driver, cfg.KafkaConfig.ProducerTopic))
 
 	processorInstance := processor.NewProcessor[*kafka.Message, character_processor.Payload](driver, cfg.KafkaConfig.Topic, characterProcessor.Process)
 

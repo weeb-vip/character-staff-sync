@@ -1,3 +1,8 @@
+// Package producer holds the payload types published to the image pipeline.
+//
+// The Pulsar client that gave the package its name is gone; these types are all
+// that remain and they are transport-independent -- the same structs are
+// published over Kafka and NATS alike.
 package producer
 
 type DataType = string

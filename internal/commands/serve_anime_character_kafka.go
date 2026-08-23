@@ -12,7 +12,7 @@ var serveAnimeCharacterKafkaCmd = &cobra.Command{
 	Use:   "serve-anime-character-kafka",
 	Short: "Start eventing pipeline for anime characters",
 	Long: `Launches the event-driven pipeline responsible for syncing 
-anime character data from Pulsar into the database.`,
+anime character data from Kafka into the database.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Println("Running anime character eventing...")
 		return eventing.EventingAnimeCharacterKafka()
