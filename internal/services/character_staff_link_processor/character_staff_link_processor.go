@@ -7,6 +7,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/weeb-vip/character-staff-sync/internal/db/repositories/anime_character_staff_link"
 	"github.com/weeb-vip/character-staff-sync/internal/logger"
+	"github.com/weeb-vip/character-staff-sync/internal/db"
 	"go.uber.org/zap"
 	"time"
 )
@@ -44,6 +45,18 @@ func (p *CharacterStaffLinkProcessorImpl) Process(ctx context.Context, data even
 			return data, err
 		}
 		if err := p.Repository.Upsert(newLink); err != nil {
+			// The character or staff row this link points at has not arrived yet.
+			// Debezium gives no ordering guarantee across tables, so this happens
+			// occasionally and cannot be fixed by retrying: the parent arrives on
+			// its own topic. Drop the event rather than block the consumer -- the
+			// link comes back with the next update or snapshot.
+			if db.IsForeignKeyViolation(err) {
+				log.Warn("skipping link whose character or staff is not present",
+					zap.String("character_id", newLink.CharacterID),
+					zap.String("staff_id", newLink.StaffID),
+					zap.String("link_id", newLink.ID))
+				return data, nil
+			}
 			return data, err
 		}
 
@@ -111,6 +124,18 @@ func (p *CharacterStaffLinkProcessorImpl) Process(ctx context.Context, data even
 			return data, err
 		}
 		if err := p.Repository.Upsert(newLink); err != nil {
+			// The character or staff row this link points at has not arrived yet.
+			// Debezium gives no ordering guarantee across tables, so this happens
+			// occasionally and cannot be fixed by retrying: the parent arrives on
+			// its own topic. Drop the event rather than block the consumer -- the
+			// link comes back with the next update or snapshot.
+			if db.IsForeignKeyViolation(err) {
+				log.Warn("skipping link whose character or staff is not present",
+					zap.String("character_id", newLink.CharacterID),
+					zap.String("staff_id", newLink.StaffID),
+					zap.String("link_id", newLink.ID))
+				return data, nil
+			}
 			return data, err
 		}
 
