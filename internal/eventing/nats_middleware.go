@@ -9,6 +9,7 @@ import (
 	epNats "github.com/ThatCatDev/ep/v2/drivers/nats"
 	"github.com/ThatCatDev/ep/v2/event"
 	"github.com/ThatCatDev/ep/v2/middleware"
+	"github.com/weeb-vip/character-staff-sync/config"
 	"github.com/weeb-vip/character-staff-sync/internal/logger"
 	"go.uber.org/zap"
 )
@@ -103,6 +104,29 @@ func (f *NatsTransformMiddleware[M]) Process(ctx context.Context, data event.Eve
 	data.Payload = debeziumMessage.Payload
 
 	return next(ctx, data)
+}
+
+// NewNatsProducerDriver builds a driver for publishing, deliberately with no
+// StreamName set.
+//
+// ep uses whichever stream its driver is configured with for Produce as well as
+// for consuming. The consumer driver here is bound to Debezium's stream, so
+// publishing image-sync through it asks JetStream to add image-sync to the CDC
+// stream -- which it refuses once image-sync has a stream of its own:
+//
+//	failed to bind subject "image-sync" to stream "ANIMEDB":
+//	subjects overlap with an existing stream
+//
+// The processor returns that error, so the message is never acked and
+// redelivers forever.
+//
+// With StreamName empty the driver derives a stream from the subject, which is
+// what image-sync wants: it is produced by this service rather than by
+// Debezium, and belongs in its own stream under its own retention.
+func NewNatsProducerDriver(cfg config.Config) drivers.Driver[*epNats.Message] {
+	return epNats.NewNatsDriver(&epNats.Config{
+		URL: cfg.NatsConfig.URL,
+	})
 }
 
 // natsProducer mirrors kafkaProducer: a Produce closure bound to one subject.

@@ -44,6 +44,15 @@ func EventingAnimeStaffNats() error {
 		}
 	}(driver)
 
+	// Publishing goes through its own driver so image-sync gets its own stream
+	// instead of being forced into Debezium's. See NewNatsProducerDriver.
+	producerDriver := NewNatsProducerDriver(cfg)
+	defer func(d drivers.Driver[*epNats.Message]) {
+		if err := d.Close(); err != nil {
+			log.Error("Error closing NATS producer driver", zap.String("error", err.Error()))
+		}
+	}(producerDriver)
+
 	database := db.NewDB(cfg.DBConfig)
 
 	repo := anime_staff.NewAnimeStaffRepository(database)
@@ -52,7 +61,7 @@ func EventingAnimeStaffNats() error {
 		NoErrorOnDelete: true,
 	}
 
-	procInstance := staff_processor.NewStaffProcessor[*epNats.Message](processorOptions, repo, NatsProducer(ctx, driver, cfg.NatsConfig.ProducerSubject))
+	procInstance := staff_processor.NewStaffProcessor[*epNats.Message](processorOptions, repo, NatsProducer(ctx, producerDriver, cfg.NatsConfig.ProducerSubject))
 
 	processorInstance := processor.NewProcessor[*epNats.Message, staff_processor.Payload](driver, cfg.NatsConfig.Subject, procInstance.Process)
 
